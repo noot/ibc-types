@@ -31,6 +31,10 @@ pub enum Error {
         key: &'static str,
         e: subtle_encoding::Error,
     },
+    /// Error parsing event attribute key
+    ParseEventKey { e: tendermint::Error },
+    /// Error parsing event attribute value
+    ParseEventValue { e: tendermint::Error },
     /// Error parsing timeout timestamp value in "{key}": {e}
     ParseTimeoutTimestampValue { key: &'static str, e: ParseIntError },
     /// Error parsing timeout timestamp in "{key}": {e}

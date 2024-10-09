@@ -78,29 +78,34 @@ impl TryFrom<Event> for ChannelClose {
         let mut channel_ordering = None;
 
         for attr in event.attributes {
-            match attr.key.as_ref() {
+            let value = attr
+                .value_str()
+                .map_err(|e| Error::ParseEventValue { e })?
+                .to_owned();
+
+            match attr.key_str().map_err(|e| Error::ParseEventKey { e })? {
                 "port_id" => {
-                    port_id = Some(PortId(attr.value));
+                    port_id = Some(PortId(value));
                 }
                 "channel_id" => {
-                    channel_id = Some(ChannelId(attr.value));
+                    channel_id = Some(ChannelId(value));
                 }
                 "counterparty_port_id" => {
-                    counterparty_port_id = Some(PortId(attr.value));
+                    counterparty_port_id = Some(PortId(value));
                 }
                 "counterparty_channel_id" => {
-                    counterparty_channel_id = if !attr.value.is_empty() {
-                        Some(ChannelId(attr.value))
+                    counterparty_channel_id = if !value.is_empty() {
+                        Some(ChannelId(value))
                     } else {
                         None
                     };
                 }
                 "connection_id" => {
-                    connection_id = Some(ConnectionId(attr.value));
+                    connection_id = Some(ConnectionId(value));
                 }
                 "packet_channel_ordering" => {
                     channel_ordering =
-                        Some(attr.value.parse().map_err(|e| Error::ParseChannelOrder {
+                        Some(value.parse().map_err(|e| Error::ParseChannelOrder {
                             key: "packet_channel_ordering",
                             e,
                         })?)
@@ -211,9 +216,14 @@ impl TryFrom<Event> for SendPacket {
         let mut src_connection_id = None;
 
         for attr in event.attributes {
-            match attr.key.as_ref() {
+            let value = attr
+                .value_str()
+                .map_err(|e| Error::ParseEventValue { e })?
+                .to_owned();
+
+            match attr.key_str().map_err(|e| Error::ParseEventKey { e })? {
                 "packet_data" => {
-                    let new_packet_data = attr.value.into_bytes();
+                    let new_packet_data = value.into_bytes();
                     if let Some(existing_packet_data) = packet_data {
                         if new_packet_data != existing_packet_data {
                             return Err(Error::MismatchedPacketData);
@@ -223,11 +233,10 @@ impl TryFrom<Event> for SendPacket {
                     }
                 }
                 "packet_data_hex" => {
-                    let new_packet_data =
-                        hex::decode(&attr.value).map_err(|e| Error::ParseHex {
-                            key: "packet_data_hex",
-                            e,
-                        })?;
+                    let new_packet_data = hex::decode(&value).map_err(|e| Error::ParseHex {
+                        key: "packet_data_hex",
+                        e,
+                    })?;
                     if let Some(existing_packet_data) = packet_data {
                         if new_packet_data != existing_packet_data {
                             return Err(Error::MismatchedPacketData);
@@ -238,14 +247,14 @@ impl TryFrom<Event> for SendPacket {
                 }
                 "packet_timeout_height" => {
                     timeout_height =
-                        Some(attr.value.parse().map_err(|e| Error::ParseTimeoutHeight {
+                        Some(value.parse().map_err(|e| Error::ParseTimeoutHeight {
                             key: "packet_timeout_height",
                             e,
                         })?);
                 }
                 "packet_timeout_timestamp" => {
                     timeout_timestamp = Some(
-                        Timestamp::from_nanoseconds(attr.value.parse::<u64>().map_err(|e| {
+                        Timestamp::from_nanoseconds(value.parse::<u64>().map_err(|e| {
                             Error::ParseTimeoutTimestampValue {
                                 key: "packet_timeout_timestamp",
                                 e,
@@ -258,47 +267,45 @@ impl TryFrom<Event> for SendPacket {
                     );
                 }
                 "packet_sequence" => {
-                    sequence = Some(attr.value.parse().map_err(|e| Error::ParseSequence {
+                    sequence = Some(value.parse().map_err(|e| Error::ParseSequence {
                         key: "packet_sequence",
                         e,
                     })?);
                 }
                 "packet_src_port" => {
-                    src_port_id = Some(attr.value.parse().map_err(|e| Error::ParsePortId {
+                    src_port_id = Some(value.parse().map_err(|e| Error::ParsePortId {
                         key: "packet_src_port",
                         e,
                     })?);
                 }
                 "packet_src_channel" => {
-                    src_channel_id =
-                        Some(attr.value.parse().map_err(|e| Error::ParseChannelId {
-                            key: "packet_src_channel",
-                            e,
-                        })?);
+                    src_channel_id = Some(value.parse().map_err(|e| Error::ParseChannelId {
+                        key: "packet_src_channel",
+                        e,
+                    })?);
                 }
                 "packet_dst_port" => {
-                    dst_port_id = Some(attr.value.parse().map_err(|e| Error::ParsePortId {
+                    dst_port_id = Some(value.parse().map_err(|e| Error::ParsePortId {
                         key: "packet_dst_port",
                         e,
                     })?);
                 }
                 "packet_dst_channel" => {
-                    dst_channel_id =
-                        Some(attr.value.parse().map_err(|e| Error::ParseChannelId {
-                            key: "packet_dst_channel",
-                            e,
-                        })?);
+                    dst_channel_id = Some(value.parse().map_err(|e| Error::ParseChannelId {
+                        key: "packet_dst_channel",
+                        e,
+                    })?);
                 }
                 "packet_channel_ordering" => {
                     channel_ordering =
-                        Some(attr.value.parse().map_err(|e| Error::ParseChannelOrder {
+                        Some(value.parse().map_err(|e| Error::ParseChannelOrder {
                             key: "packet_channel_ordering",
                             e,
                         })?);
                 }
                 "packet_connection" => {
                     src_connection_id =
-                        Some(attr.value.parse().map_err(|e| Error::ParseConnectionId {
+                        Some(value.parse().map_err(|e| Error::ParseConnectionId {
                             key: "packet_connection",
                             e,
                         })?);
@@ -416,9 +423,14 @@ impl TryFrom<Event> for ReceivePacket {
         let mut dst_connection_id = None;
 
         for attr in event.attributes {
-            match attr.key.as_ref() {
+            let value = attr
+                .value_str()
+                .map_err(|e| Error::ParseEventValue { e })?
+                .to_owned();
+
+            match attr.key_str().map_err(|e| Error::ParseEventKey { e })? {
                 "packet_data" => {
-                    let new_packet_data = attr.value.into_bytes();
+                    let new_packet_data = value.into_bytes();
                     if let Some(existing_packet_data) = packet_data {
                         if new_packet_data != existing_packet_data {
                             return Err(Error::MismatchedPacketData);
@@ -428,11 +440,10 @@ impl TryFrom<Event> for ReceivePacket {
                     }
                 }
                 "packet_data_hex" => {
-                    let new_packet_data =
-                        hex::decode(&attr.value).map_err(|e| Error::ParseHex {
-                            key: "packet_data_hex",
-                            e,
-                        })?;
+                    let new_packet_data = hex::decode(&value).map_err(|e| Error::ParseHex {
+                        key: "packet_data_hex",
+                        e,
+                    })?;
                     if let Some(existing_packet_data) = packet_data {
                         if new_packet_data != existing_packet_data {
                             return Err(Error::MismatchedPacketData);
@@ -443,14 +454,14 @@ impl TryFrom<Event> for ReceivePacket {
                 }
                 "packet_timeout_height" => {
                     timeout_height =
-                        Some(attr.value.parse().map_err(|e| Error::ParseTimeoutHeight {
+                        Some(value.parse().map_err(|e| Error::ParseTimeoutHeight {
                             key: "packet_timeout_height",
                             e,
                         })?);
                 }
                 "packet_timeout_timestamp" => {
                     timeout_timestamp = Some(
-                        Timestamp::from_nanoseconds(attr.value.parse::<u64>().map_err(|e| {
+                        Timestamp::from_nanoseconds(value.parse::<u64>().map_err(|e| {
                             Error::ParseTimeoutTimestampValue {
                                 key: "packet_timeout_timestamp",
                                 e,
@@ -463,47 +474,45 @@ impl TryFrom<Event> for ReceivePacket {
                     );
                 }
                 "packet_sequence" => {
-                    sequence = Some(attr.value.parse().map_err(|e| Error::ParseSequence {
+                    sequence = Some(value.parse().map_err(|e| Error::ParseSequence {
                         key: "packet_sequence",
                         e,
                     })?);
                 }
                 "packet_src_port" => {
-                    src_port_id = Some(attr.value.parse().map_err(|e| Error::ParsePortId {
+                    src_port_id = Some(value.parse().map_err(|e| Error::ParsePortId {
                         key: "packet_src_port",
                         e,
                     })?);
                 }
                 "packet_src_channel" => {
-                    src_channel_id =
-                        Some(attr.value.parse().map_err(|e| Error::ParseChannelId {
-                            key: "packet_src_channel",
-                            e,
-                        })?);
+                    src_channel_id = Some(value.parse().map_err(|e| Error::ParseChannelId {
+                        key: "packet_src_channel",
+                        e,
+                    })?);
                 }
                 "packet_dst_port" => {
-                    dst_port_id = Some(attr.value.parse().map_err(|e| Error::ParsePortId {
+                    dst_port_id = Some(value.parse().map_err(|e| Error::ParsePortId {
                         key: "packet_dst_port",
                         e,
                     })?);
                 }
                 "packet_dst_channel" => {
-                    dst_channel_id =
-                        Some(attr.value.parse().map_err(|e| Error::ParseChannelId {
-                            key: "packet_dst_channel",
-                            e,
-                        })?);
+                    dst_channel_id = Some(value.parse().map_err(|e| Error::ParseChannelId {
+                        key: "packet_dst_channel",
+                        e,
+                    })?);
                 }
                 "packet_channel_ordering" => {
                     channel_ordering =
-                        Some(attr.value.parse().map_err(|e| Error::ParseChannelOrder {
+                        Some(value.parse().map_err(|e| Error::ParseChannelOrder {
                             key: "packet_channel_ordering",
                             e,
                         })?);
                 }
                 "packet_connection" => {
                     dst_connection_id =
-                        Some(attr.value.parse().map_err(|e| Error::ParseConnectionId {
+                        Some(value.parse().map_err(|e| Error::ParseConnectionId {
                             key: "packet_connection",
                             e,
                         })?);
@@ -625,9 +634,14 @@ impl TryFrom<Event> for WriteAcknowledgement {
         let mut dst_connection_id = None;
 
         for attr in event.attributes {
-            match attr.key.as_ref() {
+            let value = attr
+                .value_str()
+                .map_err(|e| Error::ParseEventValue { e })?
+                .to_owned();
+
+            match attr.key_str().map_err(|e| Error::ParseEventKey { e })? {
                 "packet_data" => {
-                    let new_packet_data = attr.value.into_bytes();
+                    let new_packet_data = value.into_bytes();
                     if let Some(existing_packet_data) = packet_data {
                         if new_packet_data != existing_packet_data {
                             return Err(Error::MismatchedPacketData);
@@ -637,11 +651,10 @@ impl TryFrom<Event> for WriteAcknowledgement {
                     }
                 }
                 "packet_data_hex" => {
-                    let new_packet_data =
-                        hex::decode(&attr.value).map_err(|e| Error::ParseHex {
-                            key: "packet_data_hex",
-                            e,
-                        })?;
+                    let new_packet_data = hex::decode(&value).map_err(|e| Error::ParseHex {
+                        key: "packet_data_hex",
+                        e,
+                    })?;
                     if let Some(existing_packet_data) = packet_data {
                         if new_packet_data != existing_packet_data {
                             return Err(Error::MismatchedPacketData);
@@ -652,14 +665,14 @@ impl TryFrom<Event> for WriteAcknowledgement {
                 }
                 "packet_timeout_height" => {
                     timeout_height =
-                        Some(attr.value.parse().map_err(|e| Error::ParseTimeoutHeight {
+                        Some(value.parse().map_err(|e| Error::ParseTimeoutHeight {
                             key: "packet_timeout_height",
                             e,
                         })?);
                 }
                 "packet_timeout_timestamp" => {
                     timeout_timestamp = Some(
-                        Timestamp::from_nanoseconds(attr.value.parse::<u64>().map_err(|e| {
+                        Timestamp::from_nanoseconds(value.parse::<u64>().map_err(|e| {
                             Error::ParseTimeoutTimestampValue {
                                 key: "packet_timeout_timestamp",
                                 e,
@@ -672,39 +685,37 @@ impl TryFrom<Event> for WriteAcknowledgement {
                     );
                 }
                 "packet_sequence" => {
-                    sequence = Some(attr.value.parse().map_err(|e| Error::ParseSequence {
+                    sequence = Some(value.parse().map_err(|e| Error::ParseSequence {
                         key: "packet_sequence",
                         e,
                     })?);
                 }
                 "packet_src_port" => {
-                    src_port_id = Some(attr.value.parse().map_err(|e| Error::ParsePortId {
+                    src_port_id = Some(value.parse().map_err(|e| Error::ParsePortId {
                         key: "packet_src_port",
                         e,
                     })?);
                 }
                 "packet_src_channel" => {
-                    src_channel_id =
-                        Some(attr.value.parse().map_err(|e| Error::ParseChannelId {
-                            key: "packet_src_channel",
-                            e,
-                        })?);
+                    src_channel_id = Some(value.parse().map_err(|e| Error::ParseChannelId {
+                        key: "packet_src_channel",
+                        e,
+                    })?);
                 }
                 "packet_dst_port" => {
-                    dst_port_id = Some(attr.value.parse().map_err(|e| Error::ParsePortId {
+                    dst_port_id = Some(value.parse().map_err(|e| Error::ParsePortId {
                         key: "packet_dst_port",
                         e,
                     })?);
                 }
                 "packet_dst_channel" => {
-                    dst_channel_id =
-                        Some(attr.value.parse().map_err(|e| Error::ParseChannelId {
-                            key: "packet_dst_channel",
-                            e,
-                        })?);
+                    dst_channel_id = Some(value.parse().map_err(|e| Error::ParseChannelId {
+                        key: "packet_dst_channel",
+                        e,
+                    })?);
                 }
                 "packet_ack" => {
-                    let new_ack = attr.value.into_bytes();
+                    let new_ack = value.into_bytes();
                     if let Some(existing_ack) = acknowledgement {
                         if new_ack != existing_ack {
                             return Err(Error::MismatchedAcks);
@@ -714,7 +725,7 @@ impl TryFrom<Event> for WriteAcknowledgement {
                     }
                 }
                 "packet_ack_hex" => {
-                    let new_ack = hex::decode(&attr.value).map_err(|e| Error::ParseHex {
+                    let new_ack = hex::decode(&value).map_err(|e| Error::ParseHex {
                         key: "packet_ack_hex",
                         e,
                     })?;
@@ -729,7 +740,7 @@ impl TryFrom<Event> for WriteAcknowledgement {
                 }
                 "packet_connection" => {
                     dst_connection_id =
-                        Some(attr.value.parse().map_err(|e| Error::ParseConnectionId {
+                        Some(value.parse().map_err(|e| Error::ParseConnectionId {
                             key: "packet_connection",
                             e,
                         })?);
@@ -834,17 +845,22 @@ impl TryFrom<Event> for AcknowledgePacket {
         let mut src_connection_id = None;
 
         for attr in event.attributes {
-            match attr.key.as_ref() {
+            let value = attr
+                .value_str()
+                .map_err(|e| Error::ParseEventValue { e })?
+                .to_owned();
+
+            match attr.key_str().map_err(|e| Error::ParseEventKey { e })? {
                 "packet_timeout_height" => {
                     timeout_height =
-                        Some(attr.value.parse().map_err(|e| Error::ParseTimeoutHeight {
+                        Some(value.parse().map_err(|e| Error::ParseTimeoutHeight {
                             key: "packet_timeout_height",
                             e,
                         })?);
                 }
                 "packet_timeout_timestamp" => {
                     timeout_timestamp = Some(
-                        Timestamp::from_nanoseconds(attr.value.parse::<u64>().map_err(|e| {
+                        Timestamp::from_nanoseconds(value.parse::<u64>().map_err(|e| {
                             Error::ParseTimeoutTimestampValue {
                                 key: "packet_timeout_timestamp",
                                 e,
@@ -857,47 +873,45 @@ impl TryFrom<Event> for AcknowledgePacket {
                     );
                 }
                 "packet_sequence" => {
-                    sequence = Some(attr.value.parse().map_err(|e| Error::ParseSequence {
+                    sequence = Some(value.parse().map_err(|e| Error::ParseSequence {
                         key: "packet_sequence",
                         e,
                     })?);
                 }
                 "packet_src_port" => {
-                    src_port_id = Some(attr.value.parse().map_err(|e| Error::ParsePortId {
+                    src_port_id = Some(value.parse().map_err(|e| Error::ParsePortId {
                         key: "packet_src_port",
                         e,
                     })?);
                 }
                 "packet_src_channel" => {
-                    src_channel_id =
-                        Some(attr.value.parse().map_err(|e| Error::ParseChannelId {
-                            key: "packet_src_channel",
-                            e,
-                        })?);
+                    src_channel_id = Some(value.parse().map_err(|e| Error::ParseChannelId {
+                        key: "packet_src_channel",
+                        e,
+                    })?);
                 }
                 "packet_dst_port" => {
-                    dst_port_id = Some(attr.value.parse().map_err(|e| Error::ParsePortId {
+                    dst_port_id = Some(value.parse().map_err(|e| Error::ParsePortId {
                         key: "packet_dst_port",
                         e,
                     })?);
                 }
                 "packet_dst_channel" => {
-                    dst_channel_id =
-                        Some(attr.value.parse().map_err(|e| Error::ParseChannelId {
-                            key: "packet_dst_channel",
-                            e,
-                        })?);
+                    dst_channel_id = Some(value.parse().map_err(|e| Error::ParseChannelId {
+                        key: "packet_dst_channel",
+                        e,
+                    })?);
                 }
                 "packet_channel_ordering" => {
                     channel_ordering =
-                        Some(attr.value.parse().map_err(|e| Error::ParseChannelOrder {
+                        Some(value.parse().map_err(|e| Error::ParseChannelOrder {
                             key: "packet_channel_ordering",
                             e,
                         })?);
                 }
                 "packet_connection" => {
                     src_connection_id =
-                        Some(attr.value.parse().map_err(|e| Error::ParseConnectionId {
+                        Some(value.parse().map_err(|e| Error::ParseConnectionId {
                             key: "packet_connection",
                             e,
                         })?);
@@ -996,17 +1010,22 @@ impl TryFrom<Event> for TimeoutPacket {
         let mut channel_ordering = None;
 
         for attr in event.attributes {
-            match attr.key.as_ref() {
+            let value = attr
+                .value_str()
+                .map_err(|e| Error::ParseEventValue { e })?
+                .to_owned();
+
+            match attr.key_str().map_err(|e| Error::ParseEventKey { e })? {
                 "packet_timeout_height" => {
                     timeout_height =
-                        Some(attr.value.parse().map_err(|e| Error::ParseTimeoutHeight {
+                        Some(value.parse().map_err(|e| Error::ParseTimeoutHeight {
                             key: "packet_timeout_height",
                             e,
                         })?);
                 }
                 "packet_timeout_timestamp" => {
                     timeout_timestamp = Some(
-                        Timestamp::from_nanoseconds(attr.value.parse::<u64>().map_err(|e| {
+                        Timestamp::from_nanoseconds(value.parse::<u64>().map_err(|e| {
                             Error::ParseTimeoutTimestampValue {
                                 key: "packet_timeout_timestamp",
                                 e,
@@ -1019,40 +1038,38 @@ impl TryFrom<Event> for TimeoutPacket {
                     );
                 }
                 "packet_sequence" => {
-                    sequence = Some(attr.value.parse().map_err(|e| Error::ParseSequence {
+                    sequence = Some(value.parse().map_err(|e| Error::ParseSequence {
                         key: "packet_sequence",
                         e,
                     })?);
                 }
                 "packet_src_port" => {
-                    src_port_id = Some(attr.value.parse().map_err(|e| Error::ParsePortId {
+                    src_port_id = Some(value.parse().map_err(|e| Error::ParsePortId {
                         key: "packet_src_port",
                         e,
                     })?);
                 }
                 "packet_src_channel" => {
-                    src_channel_id =
-                        Some(attr.value.parse().map_err(|e| Error::ParseChannelId {
-                            key: "packet_src_channel",
-                            e,
-                        })?);
+                    src_channel_id = Some(value.parse().map_err(|e| Error::ParseChannelId {
+                        key: "packet_src_channel",
+                        e,
+                    })?);
                 }
                 "packet_dst_port" => {
-                    dst_port_id = Some(attr.value.parse().map_err(|e| Error::ParsePortId {
+                    dst_port_id = Some(value.parse().map_err(|e| Error::ParsePortId {
                         key: "packet_dst_port",
                         e,
                     })?);
                 }
                 "packet_dst_channel" => {
-                    dst_channel_id =
-                        Some(attr.value.parse().map_err(|e| Error::ParseChannelId {
-                            key: "packet_dst_channel",
-                            e,
-                        })?);
+                    dst_channel_id = Some(value.parse().map_err(|e| Error::ParseChannelId {
+                        key: "packet_dst_channel",
+                        e,
+                    })?);
                 }
                 "packet_channel_ordering" => {
                     channel_ordering =
-                        Some(attr.value.parse().map_err(|e| Error::ParseChannelOrder {
+                        Some(value.parse().map_err(|e| Error::ParseChannelOrder {
                             key: "packet_channel_ordering",
                             e,
                         })?);

@@ -5,10 +5,7 @@ use core::str::FromStr;
 use displaydoc::Display;
 use ibc_types_core_client::ClientId;
 use ibc_types_identifier::IdentifierError;
-use tendermint::{
-    abci,
-    abci::{Event, TypedEvent},
-};
+use tendermint::abci::{self, Event, TypedEvent};
 
 use crate::{prelude::*, ConnectionId};
 
@@ -44,6 +41,10 @@ pub enum Error {
         key: &'static str,
         e: subtle_encoding::Error,
     },
+    /// Error parsing event attribute key
+    ParseEventKey { e: tendermint::Error },
+    /// Error parsing event attribute value
+    ParseEventValue { e: tendermint::Error },
 }
 
 #[cfg(feature = "std")]
@@ -103,18 +104,21 @@ impl TryFrom<Vec<abci::EventAttribute>> for Attributes {
         let mut counterparty_connection_id = None;
 
         for attr in attributes {
-            match attr.key.as_ref() {
+            let value = attr
+                .value_str()
+                .map_err(|e| Error::ParseEventValue { e })?
+                .to_string();
+            match attr.key_str().map_err(|e| Error::ParseEventKey { e })? {
                 "connection_id" => {
-                    connection_id =
-                        Some(ConnectionId::from_str(attr.value.as_ref()).map_err(|e| {
-                            Error::ParseConnectionId {
-                                key: "connection_id",
-                                e,
-                            }
-                        })?);
+                    connection_id = Some(ConnectionId::from_str(value.as_ref()).map_err(|e| {
+                        Error::ParseConnectionId {
+                            key: "connection_id",
+                            e,
+                        }
+                    })?);
                 }
                 "client_id" => {
-                    client_id = Some(ClientId::from_str(attr.value.as_ref()).map_err(|e| {
+                    client_id = Some(ClientId::from_str(value.as_ref()).map_err(|e| {
                         Error::ParseClientId {
                             key: "client_id",
                             e,
@@ -122,12 +126,12 @@ impl TryFrom<Vec<abci::EventAttribute>> for Attributes {
                     })?);
                 }
                 "counterparty_connection_id" => {
-                    counterparty_connection_id = if attr.value.is_empty() {
+                    counterparty_connection_id = if value.is_empty() {
                         // Don't try to parse the connection ID if it was empty; set it to
                         // None instead, since we'll reject empty connection IDs in parsing.
                         None
                     } else {
-                        Some(ConnectionId::from_str(attr.value.as_ref()).map_err(|e| {
+                        Some(ConnectionId::from_str(value.as_ref()).map_err(|e| {
                             Error::ParseConnectionId {
                                 key: "counterparty_connection_id",
                                 e,
@@ -137,14 +141,14 @@ impl TryFrom<Vec<abci::EventAttribute>> for Attributes {
                 }
                 "counterparty_client_id" => {
                     counterparty_client_id =
-                        Some(ClientId::from_str(attr.value.as_ref()).map_err(|e| {
+                        Some(ClientId::from_str(value.as_ref()).map_err(|e| {
                             Error::ParseClientId {
                                 key: "counterparty_client_id",
                                 e,
                             }
                         })?);
                 }
-                _ => return Err(Error::UnexpectedAttribute(attr.key)),
+                unknown => return Err(Error::UnexpectedAttribute(unknown.to_string())),
             }
         }
 
