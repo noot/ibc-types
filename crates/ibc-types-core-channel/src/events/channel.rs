@@ -56,21 +56,26 @@ impl TryFrom<Event> for OpenInit {
         let mut version = None;
 
         for attr in event.attributes {
-            match attr.key.as_ref() {
+            let value = attr
+                .value_str()
+                .map_err(|e| Error::ParseEventValue { e })?
+                .to_owned();
+
+            match attr.key_str().map_err(|e| Error::ParseEventKey { e })? {
                 "port_id" => {
-                    port_id = Some(PortId(attr.value));
+                    port_id = Some(PortId(value));
                 }
                 "channel_id" => {
-                    channel_id = Some(ChannelId(attr.value));
+                    channel_id = Some(ChannelId(value));
                 }
                 "counterparty_port_id" => {
-                    counterparty_port_id = Some(PortId(attr.value));
+                    counterparty_port_id = Some(PortId(value));
                 }
                 "connection_id" => {
-                    connection_id = Some(ConnectionId(attr.value));
+                    connection_id = Some(ConnectionId(value));
                 }
                 "version" => {
-                    version = Some(Version(attr.value));
+                    version = Some(Version(value));
                 }
                 unknown => return Err(Error::UnexpectedAttribute(unknown.to_owned())),
             }
@@ -136,24 +141,29 @@ impl TryFrom<Event> for OpenTry {
         let mut version = None;
 
         for attr in event.attributes {
-            match attr.key.as_ref() {
+            let value = attr
+                .value_str()
+                .map_err(|e| Error::ParseEventValue { e })?
+                .to_owned();
+
+            match attr.key_str().map_err(|e| Error::ParseEventKey { e })? {
                 "port_id" => {
-                    port_id = Some(PortId(attr.value));
+                    port_id = Some(PortId(value));
                 }
                 "channel_id" => {
-                    channel_id = Some(ChannelId(attr.value));
+                    channel_id = Some(ChannelId(value));
                 }
                 "counterparty_port_id" => {
-                    counterparty_port_id = Some(PortId(attr.value));
+                    counterparty_port_id = Some(PortId(value));
                 }
                 "counterparty_channel_id" => {
-                    counterparty_channel_id = Some(ChannelId(attr.value));
+                    counterparty_channel_id = Some(ChannelId(value));
                 }
                 "connection_id" => {
-                    connection_id = Some(ConnectionId(attr.value));
+                    connection_id = Some(ConnectionId(value));
                 }
                 "version" => {
-                    version = Some(Version(attr.value));
+                    version = Some(Version(value));
                 }
                 unknown => return Err(Error::UnexpectedAttribute(unknown.to_owned())),
             }
@@ -218,21 +228,26 @@ impl TryFrom<Event> for OpenAck {
         let mut connection_id = None;
 
         for attr in event.attributes {
-            match attr.key.as_ref() {
+            let value = attr
+                .value_str()
+                .map_err(|e| Error::ParseEventValue { e })?
+                .to_owned();
+
+            match attr.key_str().map_err(|e| Error::ParseEventKey { e })? {
                 "port_id" => {
-                    port_id = Some(PortId(attr.value));
+                    port_id = Some(PortId(value));
                 }
                 "channel_id" => {
-                    channel_id = Some(ChannelId(attr.value));
+                    channel_id = Some(ChannelId(value));
                 }
                 "counterparty_port_id" => {
-                    counterparty_port_id = Some(PortId(attr.value));
+                    counterparty_port_id = Some(PortId(value));
                 }
                 "counterparty_channel_id" => {
-                    counterparty_channel_id = Some(ChannelId(attr.value));
+                    counterparty_channel_id = Some(ChannelId(value));
                 }
                 "connection_id" => {
-                    connection_id = Some(ConnectionId(attr.value));
+                    connection_id = Some(ConnectionId(value));
                 }
                 unknown => return Err(Error::UnexpectedAttribute(unknown.to_owned())),
             }
@@ -296,21 +311,26 @@ impl TryFrom<Event> for OpenConfirm {
         let mut connection_id = None;
 
         for attr in event.attributes {
-            match attr.key.as_ref() {
+            let value = attr
+                .value_str()
+                .map_err(|e| Error::ParseEventValue { e })?
+                .to_owned();
+
+            match attr.key_str().map_err(|e| Error::ParseEventKey { e })? {
                 "port_id" => {
-                    port_id = Some(PortId(attr.value));
+                    port_id = Some(PortId(value));
                 }
                 "channel_id" => {
-                    channel_id = Some(ChannelId(attr.value));
+                    channel_id = Some(ChannelId(value));
                 }
                 "counterparty_port_id" => {
-                    counterparty_port_id = Some(PortId(attr.value));
+                    counterparty_port_id = Some(PortId(value));
                 }
                 "counterparty_channel_id" => {
-                    counterparty_channel_id = Some(ChannelId(attr.value));
+                    counterparty_channel_id = Some(ChannelId(value));
                 }
                 "connection_id" => {
-                    connection_id = Some(ConnectionId(attr.value));
+                    connection_id = Some(ConnectionId(value));
                 }
                 unknown => return Err(Error::UnexpectedAttribute(unknown.to_owned())),
             }
@@ -374,21 +394,26 @@ impl TryFrom<Event> for CloseInit {
         let mut connection_id = None;
 
         for attr in event.attributes {
-            match attr.key.as_ref() {
+            let value = attr
+                .value_str()
+                .map_err(|e| Error::ParseEventValue { e })?
+                .to_owned();
+
+            match attr.key_str().map_err(|e| Error::ParseEventKey { e })? {
                 "port_id" => {
-                    port_id = Some(PortId(attr.value));
+                    port_id = Some(PortId(value));
                 }
                 "channel_id" => {
-                    channel_id = Some(ChannelId(attr.value));
+                    channel_id = Some(ChannelId(value));
                 }
                 "counterparty_port_id" => {
-                    counterparty_port_id = Some(PortId(attr.value));
+                    counterparty_port_id = Some(PortId(value));
                 }
                 "counterparty_channel_id" => {
-                    counterparty_channel_id = Some(ChannelId(attr.value));
+                    counterparty_channel_id = Some(ChannelId(value));
                 }
                 "connection_id" => {
-                    connection_id = Some(ConnectionId(attr.value));
+                    connection_id = Some(ConnectionId(value));
                 }
                 unknown => return Err(Error::UnexpectedAttribute(unknown.to_owned())),
             }
@@ -452,21 +477,26 @@ impl TryFrom<Event> for CloseConfirm {
         let mut connection_id = None;
 
         for attr in event.attributes {
-            match attr.key.as_ref() {
+            let value = attr
+                .value_str()
+                .map_err(|e| Error::ParseEventValue { e })?
+                .to_owned();
+
+            match attr.key_str().map_err(|e| Error::ParseEventKey { e })? {
                 "port_id" => {
-                    port_id = Some(PortId(attr.value));
+                    port_id = Some(PortId(value));
                 }
                 "channel_id" => {
-                    channel_id = Some(ChannelId(attr.value));
+                    channel_id = Some(ChannelId(value));
                 }
                 "counterparty_port_id" => {
-                    counterparty_port_id = Some(PortId(attr.value));
+                    counterparty_port_id = Some(PortId(value));
                 }
                 "counterparty_channel_id" => {
-                    counterparty_channel_id = Some(ChannelId(attr.value));
+                    counterparty_channel_id = Some(ChannelId(value));
                 }
                 "connection_id" => {
-                    connection_id = Some(ConnectionId(attr.value));
+                    connection_id = Some(ConnectionId(value));
                 }
                 unknown => return Err(Error::UnexpectedAttribute(unknown.to_owned())),
             }

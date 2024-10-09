@@ -41,6 +41,10 @@ pub enum Error {
         key: &'static str,
         e: subtle_encoding::Error,
     },
+    /// Error parsing event attribute key
+    ParseEventKey { e: tendermint::Error },
+    /// Error parsing event attribute value
+    ParseEventValue { e: tendermint::Error },
 }
 
 #[cfg(feature = "std")]
@@ -95,19 +99,23 @@ impl TryFrom<Event> for CreateClient {
         let mut consensus_height = None;
 
         for attr in event.attributes {
-            match attr.key.as_ref() {
+            let value = attr
+                .value_str()
+                .map_err(|e| Error::ParseEventValue { e })?
+                .to_string();
+
+            match attr.key_str().map_err(|e| Error::ParseEventKey { e })? {
                 "client_id" => {
-                    client_id = Some(ClientId(attr.value));
+                    client_id = Some(ClientId(value));
                 }
                 "client_type" => {
-                    client_type = Some(ClientType(attr.value));
+                    client_type = Some(ClientType(value));
                 }
                 "consensus_height" => {
-                    consensus_height =
-                        Some(attr.value.parse().map_err(|e| Error::ParseHeight {
-                            key: "consensus_height",
-                            e,
-                        })?);
+                    consensus_height = Some(value.parse().map_err(|e| Error::ParseHeight {
+                        key: "consensus_height",
+                        e,
+                    })?);
                 }
                 unknown => return Err(Error::UnexpectedAttribute(unknown.to_owned())),
             }
@@ -167,25 +175,27 @@ impl TryFrom<Event> for UpdateClient {
         let mut header = None;
 
         for attr in value.attributes {
-            match attr.key.as_ref() {
+            let value = attr
+                .value_str()
+                .map_err(|e| Error::ParseEventValue { e })?
+                .to_string();
+
+            match attr.key_str().map_err(|e| Error::ParseEventKey { e })? {
                 "client_id" => {
-                    client_id = Some(ClientId(attr.value));
+                    client_id = Some(ClientId(value));
                 }
                 "client_type" => {
-                    client_type = Some(ClientType(attr.value));
+                    client_type = Some(ClientType(value));
                 }
                 "consensus_height" => {
-                    consensus_height =
-                        Some(attr.value.parse().map_err(|e| Error::ParseHeight {
-                            key: "consensus_height",
-                            e,
-                        })?);
+                    consensus_height = Some(value.parse().map_err(|e| Error::ParseHeight {
+                        key: "consensus_height",
+                        e,
+                    })?);
                 }
                 "header" => {
-                    header = Some(
-                        hex::decode(attr.value)
-                            .map_err(|e| Error::ParseHex { key: "header", e })?,
-                    );
+                    header =
+                        Some(hex::decode(value).map_err(|e| Error::ParseHex { key: "header", e })?);
                 }
                 unknown => return Err(Error::UnexpectedAttribute(unknown.to_owned())),
             }
@@ -238,12 +248,17 @@ impl TryFrom<Event> for ClientMisbehaviour {
         let mut client_type = None;
 
         for attr in value.attributes {
-            match attr.key.as_ref() {
+            let value = attr
+                .value_str()
+                .map_err(|e| Error::ParseEventValue { e })?
+                .to_string();
+
+            match attr.key_str().map_err(|e| Error::ParseEventKey { e })? {
                 "client_id" => {
-                    client_id = Some(ClientId(attr.value));
+                    client_id = Some(ClientId(value));
                 }
                 "client_type" => {
-                    client_type = Some(ClientType(attr.value));
+                    client_type = Some(ClientType(value));
                 }
                 unknown => return Err(Error::UnexpectedAttribute(unknown.to_owned())),
             }
@@ -295,19 +310,23 @@ impl TryFrom<Event> for UpgradeClient {
         let mut consensus_height = None;
 
         for attr in value.attributes {
-            match attr.key.as_ref() {
+            let value = attr
+                .value_str()
+                .map_err(|e| Error::ParseEventValue { e })?
+                .to_string();
+
+            match attr.key_str().map_err(|e| Error::ParseEventKey { e })? {
                 "client_id" => {
-                    client_id = Some(ClientId(attr.value));
+                    client_id = Some(ClientId(value));
                 }
                 "client_type" => {
-                    client_type = Some(ClientType(attr.value));
+                    client_type = Some(ClientType(value));
                 }
                 "consensus_height" => {
-                    consensus_height =
-                        Some(attr.value.parse().map_err(|e| Error::ParseHeight {
-                            key: "consensus_height",
-                            e,
-                        })?);
+                    consensus_height = Some(value.parse().map_err(|e| Error::ParseHeight {
+                        key: "consensus_height",
+                        e,
+                    })?);
                 }
                 unknown => return Err(Error::UnexpectedAttribute(unknown.to_owned())),
             }
